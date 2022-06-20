@@ -2,7 +2,9 @@
 title: "Activity Monitoring Analysis"
 author: "Daniel Smit"
 date: '2022-06-19'
-output: html_document
+output:
+  html_document:
+    keep_md: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -28,32 +30,22 @@ activityNoNA = na.omit(activity)
 
 ## What is mean total number of steps taken per day?
 
-A histogram of all values shows that zero steps were recorded on a large proportion of days. We see less than 100 steps taken per day was the largest non-NA result,
+A histogram of all values shows that zero steps were recorded on a large proportion of days.
 
 ```{r stepsHistogram}
-hist(x=activityNoNA$steps, breaks=30,
+stepsPerDay = aggregate(steps ~ date, activityNoNA, sum)
+
+hist(x=stepsPerDay$steps, breaks=30,
      main='Histogram of Steps Taken Per Day',
      xlab='Steps Taken Per Day',
      ylab='Count')
 ```
 
-If we take out zero value days we can see the remaining counts more clearly.
-
-```{r stepsHistogramWithoutZeroDays}
-activityNoZeros = activityNoNA[activityNoNA$steps != 0,]
-hist(x=activityNoZeros$steps, breaks=30,
-     main='Histogram of Steps Taken Per Day excluding zeroes',
-     xlab='Steps Taken Per Day',
-     ylab='Count')
-```
-
-Back to using the full non-NA data set.
-
 We calculate the mean and median as follows.
 
 ```{r calculateMeanAndMedian}
-meanSteps = mean(activityNoNA$steps)
-medianSteps = median(activityNoNA$steps)
+meanSteps = mean(stepsPerDay$steps)
+medianSteps = median(stepsPerDay$steps)
 
 cat('Mean steps: ', meanSteps, '\n')
 cat('Median steps: ', medianSteps)
@@ -97,15 +89,6 @@ For this, let's continue using the `meanStepsByInterval` as calculated earlier.
 ```{r fillNAs}
 intervalValues <- unique(activity$interval)
 
-
-# selectMeanStepsForOrderedInterval <- function(interval) {
-#   indexes <- which(meanStepsByInterval$interval == interval)
-#   # index <- indexes[0]
-#   cat('indexes...', indexes, ', interval: ', interval)
-#   # cat('meanStepsByInterval ', index, ' is ', meanStepsByInterval[index,2], '\n')
-#   # meanStepsByInterval[index,2];
-# }
-
 filledActivity = activity
 stepsCol <- 1
 intervalCol <- 3
@@ -116,37 +99,29 @@ for(row in 1:nrow(filledActivity)){
     filledActivity[row,stepsCol] <- meanStepsByInterval[intervalIndex, 2]
   }
 }
+
+summary(filledActivity)
 ```
 
 Let's plot a histogram of this estimated data.
 
 ```{r stepsHistogramWithEstimatedData}
-hist(x=filledActivity$steps, breaks=30,
+stepsPerDayEstimated = aggregate(steps ~ date, filledActivity, sum)
+
+hist(x=stepsPerDayEstimated$steps, breaks=30,
      main='Histogram of Steps Taken Per Day with estimation',
      xlab='Steps Taken Per Day',
      ylab='Count (with estimation)')
 ```
 
-Let's filter out the zero values.
-
-```{r stepsHistogramEstimatedWithoutZeroDays}
-filledActivityNoZeros = filledActivity[filledActivity$steps != 0,]
-hist(x=filledActivityNoZeros$steps, breaks=30,
-     main='Histogram of Steps Taken Per Day with estimation, no zeroes',
-     xlab='Steps Taken Per Day',
-     ylab='Count (with estimation)')
-```
-
-Back to using the full estimated (filled-in) data set.
-
 Let's calculate the mean and median.
 
 ```{r calculateFilledMeanAndMedian}
-filledMeanSteps = mean(filledActivity$steps)
-filledMedianSteps = median(filledActivity$steps)
+filledMeanSteps = mean(stepsPerDayEstimated$steps)
+filledMedianSteps = median(stepsPerDayEstimated$steps)
 
-cat('Filled mean steps: ', meanSteps, '\n')
-cat('Filled median steps: ', medianSteps)
+cat('Filled mean steps: ', filledMeanSteps, '\n')
+cat('Filled median steps: ', filledMedianSteps)
 ```
 
 Just to remind you once again, the original mean and medians, before filling in NA step values, were:
@@ -156,9 +131,9 @@ cat('Mean steps: ', meanSteps, '\n')
 cat('Median steps: ', medianSteps)
 ```
 
-The mean and median are the same before and after filling in missing data with the mean for that time interval.
+The means are the same before and after filling in missing data, but the median has changed slightly.
 
-There are however slight differences in the histograms, which are a bit more obvious when zero step results are hidden from the chart.
+There are also slight differences in the histograms, with the count of the most common step range being amplified and surrounding values lowered.
 
 ## Are there differences in activity patterns between weekdays and week-ends?
 
